@@ -49,28 +49,27 @@ int main() {
     try {
         // Register event loop functions and obtain the runMicroTask() helper
         // function.
-        jsi::Object helpers =
-                runtime
+        jsi::Object helpers = runtime
                         ->evaluateJavaScript(
                                 std::make_unique<jsi::StringBuffer>( std::move(*optCodeJsLib)), "jslib.js.inc")
                         .asObject(*runtime);
+
         jsi::Function peekMacroTask =
                 helpers.getPropertyAsFunction(*runtime, "peek");
+
         jsi::Function runMacroTask = helpers.getPropertyAsFunction(*runtime, "run");
 
         // There are no pending tasks, but we want to initialize the event loop
         // current time.
         {
-            double curTimeMs =
-                    (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+            double curTimeMs = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
             runMacroTask.call(*runtime, curTimeMs);
         }
 
 
-        runtime->evaluateJavaScript(
-                std::make_unique<jsi::StringBuffer>(std::move(*optCode)), jsPath);
+        runtime->evaluateJavaScript(std::make_unique<jsi::StringBuffer>(std::move(*optCode)), jsPath);
         runtime->drainMicrotasks();
 
         double nextTimeMs;
