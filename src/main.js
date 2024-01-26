@@ -1,12 +1,12 @@
 var sec = 0;
 
-function timer() {
-    print( `${++sec} seconds`);
-    if (sec < 5)
-        setTimeout(timer, 1000);
-    else
-        print("done");
+function mainloop() {
+
+    sec++;
+    sec % 60 === 0 && print( sec / 60 + "  segundos" )
+
+    setTimeout(mainloop, 16);
 }
 
-print("Starting timer");
-setTimeout(timer, 1000);
+print("Starting mainloop");
+setTimeout(mainloop, 16);

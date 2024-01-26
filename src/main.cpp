@@ -6,6 +6,8 @@
 #include <optional>
 #include <sstream>
 #include <thread>
+#include <SFML/Window.hpp>
+
 
 using namespace ::facebook;
 
@@ -27,6 +29,10 @@ static std::optional<std::string> readFile(const char *path) {
 
 
 int main() {
+
+    sf::Window window(sf::VideoMode(sf::Vector2u(800, 600)), "My window");
+
+
     const char *jsPath = "/Users/alef/workdir/dino-engine/src/main.js";
     const char *jsLibPath = "/Users/alef/workdir/dino-engine/src/jslib.js";
 
@@ -50,9 +56,9 @@ int main() {
         // Register event loop functions and obtain the runMicroTask() helper
         // function.
         jsi::Object helpers = runtime
-                        ->evaluateJavaScript(
-                                std::make_unique<jsi::StringBuffer>( std::move(*optCodeJsLib)), "jslib.js.inc")
-                        .asObject(*runtime);
+                ->evaluateJavaScript(
+                        std::make_unique<jsi::StringBuffer>(std::move(*optCodeJsLib)), "jslib.js.inc")
+                .asObject(*runtime);
 
         jsi::Function peekMacroTask =
                 helpers.getPropertyAsFunction(*runtime, "peek");
@@ -62,9 +68,9 @@ int main() {
         // There are no pending tasks, but we want to initialize the event loop
         // current time.
         {
-            double curTimeMs = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::steady_clock::now().time_since_epoch())
-                            .count();
+            double curTimeMs = (double) std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count();
             runMacroTask.call(*runtime, curTimeMs);
         }
 
@@ -74,30 +80,42 @@ int main() {
 
         double nextTimeMs;
 
-        // This is the event loop. Loop while there are pending tasks.
-        while ((nextTimeMs = peekMacroTask.call(*runtime).getNumber()) >= 0) {
-            auto now = std::chrono::steady_clock::now();
-            double curTimeMs =
-                    (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                            now.time_since_epoch())
-                            .count();
+        while (window.isOpen()) {
+            // check all the window's events that were triggered since the last iteration of the loop
+            sf::Event event;
 
-            // If we have to, sleep until the next task is ready.
-            if (nextTimeMs > curTimeMs) {
-                std::this_thread::sleep_until(
-                        now +
-                        std::chrono::milliseconds((int_least64_t)(nextTimeMs - curTimeMs)));
+            nextTimeMs = peekMacroTask.call(*runtime).getNumber();
 
-                // Update the current time, since we slept.
-                curTimeMs =
-                        (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                                std::chrono::steady_clock::now().time_since_epoch())
-                                .count();
+            while (nextTimeMs >= 0 || runtime->drainMicrotasks()) {
+
+                if(window.pollEvent(event)) {
+                    if (event.type == sf::Event::Closed)
+                    {
+                        window.close();
+                        break;
+                    }
+                }
+
+                nextTimeMs = peekMacroTask.call(*runtime).getNumber();
+
+                // This is the event loop. Loop while there are pending tasks.
+                if (nextTimeMs >= 0) {
+                    auto now = std::chrono::steady_clock::now();
+                    double curTimeMs =
+                            (double) std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    now.time_since_epoch())
+                                    .count();
+
+                    // If we have to, sleep until the next task is ready.
+                    if (nextTimeMs > curTimeMs) {
+                        continue;
+                    }
+
+                    // Run the next task.
+                    runMacroTask.call(*runtime, curTimeMs);
+                    runtime->drainMicrotasks();
+                }
             }
-
-            // Run the next task.
-            runMacroTask.call(*runtime, curTimeMs);
-            runtime->drainMicrotasks();
         }
     } catch (jsi::JSError &e) {
         // Handle JS exceptions here.

@@ -16,6 +16,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(hermes)
 
+FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY "https://github.com/SFML/SFML.git"
+        GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(SFML)
+
 set(SHERMES ${hermes_BINARY_DIR}/tools/shermes CACHE FILEPATH "shermes tool path")
 set(FFIGEN ${hermes_SOURCE_DIR}/tools/ffigen/ffigen.py CACHE FILEPATH "ffigen tool path")
 
@@ -28,5 +36,10 @@ include_directories("${hermes_SOURCE_DIR}/public")
 link_directories("${hermes_BINARY_DIR}/API/hermes")
 link_directories("${hermes_BINARY_DIR}/jsi")
 link_libraries(jsi)
+
+link_libraries( sfml-audio
+                sfml-graphics
+                sfml-system
+                sfml-window)
 
 add_subdirectory(src)
