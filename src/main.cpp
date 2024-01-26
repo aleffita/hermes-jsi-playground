@@ -47,6 +47,7 @@ int main() {
     auto runtimeConfig = ::hermes::vm::RuntimeConfig::Builder()
             .withIntl(false)
             .withMicrotaskQueue(true)
+            .withES6Promise(true)
             .build();
 
     auto runtime = facebook::hermes::makeHermesRuntime(runtimeConfig);
@@ -75,14 +76,22 @@ int main() {
         }
 
 
-        runtime->evaluateJavaScript(std::make_unique<jsi::StringBuffer>(std::move(*optCode)), jsPath);
+        auto main = runtime->evaluateJavaScript(std::make_unique<jsi::StringBuffer>(std::move(*optCode)), jsPath).asObject(*runtime);
+        auto mainFunctionJs = main.getPropertyAsFunction(*runtime, "main");
+
+
         runtime->drainMicrotasks();
 
+
+
         double nextTimeMs;
+        window.setFramerateLimit(120);
+
 
         while (window.isOpen()) {
             // check all the window's events that were triggered since the last iteration of the loop
             sf::Event event;
+            mainFunctionJs.call(*runtime);
 
             nextTimeMs = peekMacroTask.call(*runtime).getNumber();
 
@@ -111,9 +120,12 @@ int main() {
                         continue;
                     }
 
+
                     // Run the next task.
                     runMacroTask.call(*runtime, curTimeMs);
-                    runtime->drainMicrotasks();
+                    if(runtime->drainMicrotasks())
+                        mainFunctionJs.call(*runtime, event.mouseMove.x, event.mouseMove.y);
+                    window.display();
                 }
             }
         }

@@ -1,12 +1,15 @@
-var sec = 0;
+var ticks = 0;
 
-function mainloop() {
+function main(e) {
 
-    sec++;
-    sec % 60 === 0 && print( sec / 60 + "  segundos" )
-
-    setTimeout(mainloop, 16);
+    ticks % 60 === 0 && e && print(e)
+    ticks++;
+    ticks % 60 === 0 && print( ticks / 60 + "  seconds" )
 }
 
-print("Starting mainloop");
-setTimeout(mainloop, 16);
+(() => {
+    return {
+        main: (...e) => setTimeout(() => main(e), 16)
+    }
+})();
+
