@@ -30,7 +30,7 @@ static std::optional<std::string> readFile(const char *path) {
 
 int main() {
 
-    sf::Window window(sf::VideoMode(sf::Vector2u(800, 600)), "My window");
+    sf::Window window(sf::VideoMode(800, 600), "My window");
 
 
     const char *jsPath = "/Users/alef/workdir/dino-engine/src/main.js";
@@ -76,7 +76,9 @@ int main() {
         }
 
 
-        auto main = runtime->evaluateJavaScript(std::make_unique<jsi::StringBuffer>(std::move(*optCode)), jsPath).asObject(*runtime);
+
+
+        auto main = runtime->evaluateJavaScript(std::make_unique<jsi::StringBuffer>(std::move(*optCode)), "main.jsx").asObject(*runtime);
         auto mainFunctionJs = main.getPropertyAsFunction(*runtime, "main");
 
 
